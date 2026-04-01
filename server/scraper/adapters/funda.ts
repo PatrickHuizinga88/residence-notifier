@@ -1,5 +1,6 @@
 import type { RawListing, ScraperAdapter, PropertyType, FurnishedStatus } from '~~/types/listing'
 import { runApifyActor } from '~~/server/utils/apify'
+import { scrapeFilters } from '../config'
 
 // Apify Actor: easyapi/funda-nl-scraper
 const ACTOR_ID = 'easyapi~funda-nl-scraper'
@@ -77,10 +78,26 @@ export function createFundaAdapter(apiToken: string): ScraperAdapter {
     },
 
     async fetchListings(): Promise<RawListing[]> {
-      const items = await runApifyActor(ACTOR_ID, {
-        searchUrl: 'https://www.funda.nl/zoeken/huur/?selected_area=%5B%22nl%22%5D&availability=%5B%22available%22%5D',
-        maxItems: 100,
-      }, apiToken)
+      // Scrape per stad met prijsfilter
+      const allItems: Record<string, unknown>[] = []
+
+      for (const city of scrapeFilters.cities) {
+        const searchUrl = `https://www.funda.nl/zoeken/huur/?selected_area=%5B%22${city}%22%5D&price=%22-${scrapeFilters.maxPrice}%22&availability=%5B%22available%22%5D`
+        console.log(`[funda] Scraping ${city}...`)
+
+        try {
+          const items = await runApifyActor(ACTOR_ID, {
+            searchUrl,
+            maxItems: 50,
+          }, apiToken)
+          allItems.push(...items)
+          console.log(`[funda] ${city}: ${items.length} items`)
+        } catch (error) {
+          console.error(`[funda] ${city} failed:`, error)
+        }
+      }
+
+      const items = allItems
 
       console.log(`[funda] Apify returned ${items.length} items`)
 

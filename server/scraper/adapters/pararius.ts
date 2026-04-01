@@ -1,5 +1,6 @@
 import type { RawListing, ScraperAdapter, PropertyType, FurnishedStatus } from '~~/types/listing'
 import { runApifyActor } from '~~/server/utils/apify'
+import { scrapeFilters } from '../config'
 
 // Apify Actor: lexis-solutions/pararius
 const ACTOR_ID = 'lexis-solutions~pararius'
@@ -75,12 +76,27 @@ export function createParariusAdapter(apiToken: string): ScraperAdapter {
     },
 
     async fetchListings(): Promise<RawListing[]> {
-      const items = await runApifyActor(ACTOR_ID, {
-        searchUrl: 'https://www.pararius.nl/huurwoningen/nederland',
-        maxItems: 100,
-      }, apiToken)
+      // Scrape per stad met prijsfilter
+      const allItems: Record<string, unknown>[] = []
 
-      console.log(`[pararius] Apify returned ${items.length} items`)
+      for (const city of scrapeFilters.cities) {
+        const searchUrl = `https://www.pararius.nl/huurwoningen/${city}/0-${scrapeFilters.maxPrice}`
+        console.log(`[pararius] Scraping ${city}...`)
+
+        try {
+          const items = await runApifyActor(ACTOR_ID, {
+            searchUrl,
+            maxItems: 50,
+          }, apiToken)
+          allItems.push(...items)
+          console.log(`[pararius] ${city}: ${items.length} items`)
+        } catch (error) {
+          console.error(`[pararius] ${city} failed:`, error)
+        }
+      }
+
+      const items = allItems
+      console.log(`[pararius] Apify returned ${items.length} total items`)
 
       const listings: RawListing[] = []
       for (const item of items) {
