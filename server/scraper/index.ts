@@ -1,16 +1,20 @@
 import type { RawListing, ScraperAdapter } from '~~/types/listing'
-import { parariusAdapter } from './adapters/pararius'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-
-const adapters: ScraperAdapter[] = [
-  parariusAdapter,
-]
+import { createParariusAdapter } from './adapters/pararius'
+import { createFundaAdapter } from './adapters/funda'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 interface ScrapeResult {
   source: string
   newListings: number
   updatedListings: number
   errors: string[]
+}
+
+function createAdapters(apifyToken: string): ScraperAdapter[] {
+  return [
+    createParariusAdapter(apifyToken),
+    createFundaAdapter(apifyToken),
+  ]
 }
 
 async function upsertListings(
@@ -88,7 +92,8 @@ async function upsertListings(
   return { newCount, updatedCount }
 }
 
-export async function runScraper(supabase: SupabaseClient): Promise<ScrapeResult[]> {
+export async function runScraper(supabase: SupabaseClient, apifyToken: string): Promise<ScrapeResult[]> {
+  const adapters = createAdapters(apifyToken)
   const results: ScrapeResult[] = []
 
   for (const adapter of adapters) {
@@ -105,13 +110,12 @@ export async function runScraper(supabase: SupabaseClient): Promise<ScrapeResult
     try {
       const isHealthy = await adapter.healthCheck()
       if (!isHealthy) {
-        throw new Error(`${source} health check failed`)
+        throw new Error(`${source} health check failed — is APIFY_API_TOKEN set?`)
       }
 
       const rawListings = await adapter.fetchListings()
       const { newCount, updatedCount } = await upsertListings(supabase, source, rawListings)
 
-      // Update scrape log
       if (logEntry) {
         await supabase
           .from('scrape_logs')
