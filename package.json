@@ -9,8 +9,23 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild",
+      "vue-demi"
+    ]
+  },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.64",
+    "@nuxt/icon": "^2.2.1",
+    "@nuxt/ui": "^4.6.0",
+    "@nuxtjs/supabase": "^2.0.4",
+    "ai": "^6.0.142",
+    "cheerio": "^1.2.0",
+    "lucide-vue-next": "^1.0.0",
     "nuxt": "^4.4.2",
+    "tailwindcss": "^4.2.2",
     "vue": "^3.5.31",
     "vue-router": "^5.0.4"
   }
