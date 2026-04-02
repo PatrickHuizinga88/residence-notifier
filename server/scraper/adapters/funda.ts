@@ -94,6 +94,10 @@ export function createFundaAdapter(apiToken: string): ScraperAdapter {
         }, apiToken)
         allItems.push(...items)
         console.log(`[funda] Apify returned ${items.length} items`)
+        if (items.length > 0) {
+          console.log(`[funda] Sample item keys:`, Object.keys(items[0]))
+          console.log(`[funda] Sample item:`, JSON.stringify(items[0]).slice(0, 500))
+        }
       } catch (error) {
         console.error(`[funda] Scraping failed:`, error)
       }
