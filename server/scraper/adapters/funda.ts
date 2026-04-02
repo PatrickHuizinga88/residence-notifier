@@ -32,62 +32,69 @@ function parsePriceToCents(value: unknown): number {
 }
 
 function normalizeResult(raw: Record<string, unknown>): RawListing | null {
-  // Funda uses nested address object
+  // Nested address object
   const addr = (raw.address || {}) as Record<string, unknown>
   const city = (addr.city || '') as string
   const neighborhood = (addr.neighbourhood || addr.wijk || '') as string
-  const province = (addr.province || '') as string
 
-  // Price can be nested or flat
-  const price = parsePriceToCents(raw.rent_price || raw.price || raw.offered_since)
+  // Price: can be a number, string, or object like { amount: 1500, currency: "EUR" }
+  const rawPrice = raw.price as unknown
+  let price = 0
+  if (typeof rawPrice === 'object' && rawPrice !== null) {
+    const priceObj = rawPrice as Record<string, unknown>
+    price = parsePriceToCents(priceObj.amount || priceObj.value || priceObj.asking_price || priceObj.rent)
+  } else {
+    price = parsePriceToCents(rawPrice)
+  }
 
-  // URL
-  const relativeUrl = (raw.relative_url || '') as string
+  // URL: object_detail_page_relative_url is the actual field name
+  const relativeUrl = (raw.object_detail_page_relative_url || raw.relative_url || '') as string
   const url = relativeUrl
     ? `https://www.funda.nl${relativeUrl}`
-    : (raw.url || raw.link || '') as string
+    : (raw.url || '') as string
 
-  // Title: Funda often uses address as title
-  const street = (addr.street || addr.house_number
-    ? `${addr.street || ''} ${addr.house_number || ''}`.trim()
-    : '') as string
-  const title = (raw.title || raw.name || street || '') as string
+  // Title from address parts
+  const street = (addr.street && addr.house_number
+    ? `${addr.street} ${addr.house_number}`
+    : (addr.street || '')) as string
+  const title = (raw.title || raw.name || street || `${city} woning`) as string
 
-  if (!title || !price || !url) return null
+  if (!url) return null
+  // Allow price 0 temporarily — some listings may have price in detail only
+  if (!title) return null
 
-  // Source listing ID from URL or Funda's internal ID
-  const sourceListingId = (raw.id || raw.global_id || relativeUrl.split('/').filter(Boolean).pop() || url) as string
+  // Source ID
+  const sourceListingId = String(raw.id || relativeUrl.split('/').filter(Boolean).pop() || url)
 
   // Agent info
   const agents = raw.agent as Array<Record<string, unknown>> | undefined
 
-  // Images
-  const mediaItems = raw.media_items as Array<Record<string, unknown>> | undefined
-  const images = mediaItems
-    ?.filter(m => m.type === 'image' || m.url)
-    .map(m => (m.url || m.relative_url) as string)
-    .filter(Boolean)
+  // Thumbnail image
+  const photoId = raw.photo_image_id || raw.thumbnail_id
+  const images = photoId
+    ? [`https://cloud.funda.nl/valentina_media/resize/720x480/${photoId}.jpg`]
+    : undefined
 
   return {
-    source_listing_id: String(sourceListingId),
+    source_listing_id: sourceListingId,
     source_url: url,
     title,
-    description: (raw.description || raw.text || '') as string | undefined,
+    description: undefined,
     price_monthly: price,
     city: city || 'Onbekend',
     neighborhood: neighborhood || undefined,
-    postal_code: (addr.postal_code || addr.postcode || raw.postal_code) as string | undefined,
+    postal_code: (addr.postal_code || addr.postcode) as string | undefined,
     address: street || undefined,
-    latitude: (addr.lat || raw.latitude) as number | undefined,
-    longitude: (addr.lng || raw.longitude) as number | undefined,
-    surface_m2: (raw.living_area || raw.surface_area || raw.plot_area) as number | undefined,
-    rooms: (raw.number_of_rooms || raw.rooms) as number | undefined,
-    bedrooms: (raw.number_of_bedrooms || raw.bedrooms) as number | undefined,
-    property_type: parsePropertyType((raw.property_type || raw.type || raw.category || '') as string),
-    furnished: parseFurnished((raw.interior || raw.furnished || '') as string),
-    available_from: (raw.available_from || raw.availability || raw.offered_since) as string | undefined,
-    energy_label: (raw.energy_label || raw.energy_rating) as string | undefined,
-    images: images?.length ? images : undefined,
+    latitude: (addr.lat || addr.latitude) as number | undefined,
+    longitude: (addr.lng || addr.longitude) as number | undefined,
+    surface_m2: (raw.floor_area || raw.living_area) as number | undefined,
+    rooms: raw.number_of_rooms as number | undefined,
+    bedrooms: raw.number_of_bedrooms as number | undefined,
+    property_type: parsePropertyType((raw.object_type || raw.type || '') as string),
+    furnished: parseFurnished((raw.interior || '') as string),
+    available_from: (raw.offered_since || raw.publish_date) as string | undefined,
+    energy_label: (raw.energy_label) as string | undefined,
+    images,
     landlord_type: agents?.length ? 'agency' : undefined,
   }
 }
