@@ -2,49 +2,52 @@ import type { RawListing, ScraperAdapter, PropertyType } from '~~/types/listing'
 import { runApifyActor } from '~~/server/utils/apify'
 import { scrapeFilters } from '../config'
 
-const ACTOR_ID = 'apify~web-scraper'
+const ACTOR_ID = 'apify~puppeteer-scraper'
 
 const PAGE_FUNCTION = `
 async function pageFunction(context) {
-  const { jQuery: $ } = context;
-  const listings = [];
+  const { page } = context;
+  await page.waitForSelector('.listing-search-item--for-rent', { timeout: 15000 });
 
-  $('.listing-search-item--for-rent').each((i, el) => {
-    const $el = $(el);
+  const listings = await page.evaluate(() => {
+    const results = [];
+    document.querySelectorAll('.listing-search-item--for-rent').forEach(el => {
+      const titleEl = el.querySelector('.listing-search-item__title');
+      const linkEl = titleEl?.closest('a') || el.querySelector('a');
+      const href = linkEl?.getAttribute('href');
+      if (!href) return;
 
-    const linkEl = $el.find('.listing-search-item__title').closest('a');
-    const href = linkEl.attr('href') || $el.find('a').first().attr('href');
-    if (!href) return;
+      const title = titleEl?.textContent?.trim();
+      if (!title) return;
 
-    const title = $el.find('.listing-search-item__title').text().trim();
-    if (!title) return;
+      const priceText = el.querySelector('.listing-search-item__price-main')?.textContent?.trim() || '';
+      const priceMatch = priceText.replace(/[^0-9]/g, '');
+      const price = parseInt(priceMatch, 10);
+      if (!price) return;
 
-    const priceText = $el.find('.listing-search-item__price-main').text().trim();
-    const priceMatch = priceText.replace(/[^\\d]/g, '');
-    const price = parseInt(priceMatch, 10);
-    if (!price) return;
+      const url = href.startsWith('http') ? href : 'https://www.huurwoningen.nl' + href;
+      const sourceId = href.split('/').filter(Boolean).pop() || href;
 
-    const url = href.startsWith('http') ? href : 'https://www.huurwoningen.nl' + href;
-    const sourceId = href.split('/').filter(Boolean).pop() || href;
+      const surfaceText = el.querySelector('.illustrated-features__item--surface-area')?.textContent || '';
+      const surfaceMatch = surfaceText.match(/(\\d+)\\s*m/);
 
-    const surfaceText = $el.find('.illustrated-features__item--surface-area').text();
-    const surfaceMatch = surfaceText.match(/(\\d+)\\s*m/);
+      const roomsText = el.querySelector('.illustrated-features__item--number-of-rooms')?.textContent || '';
+      const roomsMatch = roomsText.match(/(\\d+)/);
 
-    const roomsText = $el.find('.illustrated-features__item--number-of-rooms').text();
-    const roomsMatch = roomsText.match(/(\\d+)/);
+      const imgEl = el.querySelector('.picture__image');
+      const imgSrc = imgEl?.getAttribute('data-src') || imgEl?.getAttribute('src');
 
-    const imgEl = $el.find('.picture__image').first();
-    const imgSrc = imgEl.attr('data-src') || imgEl.attr('srcset')?.split(' ')[0] || imgEl.attr('src');
-
-    listings.push({
-      sourceId,
-      url,
-      title,
-      price,
-      surface: surfaceMatch ? parseInt(surfaceMatch[1], 10) : null,
-      rooms: roomsMatch ? parseInt(roomsMatch[1], 10) : null,
-      image: imgSrc && imgSrc.startsWith('http') ? imgSrc : null,
+      results.push({
+        sourceId,
+        url,
+        title,
+        price,
+        surface: surfaceMatch ? parseInt(surfaceMatch[1], 10) : null,
+        rooms: roomsMatch ? parseInt(roomsMatch[1], 10) : null,
+        image: imgSrc && imgSrc.startsWith('http') ? imgSrc : null,
+      });
     });
+    return results;
   });
 
   return listings;
@@ -110,7 +113,15 @@ export function createHuurwoningenAdapter(apiToken: string): ScraperAdapter {
         const items = await runApifyActor(ACTOR_ID, {
           startUrls,
           pageFunction: PAGE_FUNCTION,
-          proxyConfiguration: { useApifyProxy: true },
+          proxyConfiguration: {
+            useApifyProxy: true,
+            apifyProxyGroups: ['RESIDENTIAL'],
+          },
+          useChrome: true,
+          launchContext: {
+            useChrome: true,
+            stealth: true,
+          },
           maxPagesPerCrawl: startUrls.length,
         }, apiToken)
 
