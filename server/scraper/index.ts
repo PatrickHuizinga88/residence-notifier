@@ -1,6 +1,7 @@
 import type { RawListing, ScraperAdapter } from '~~/types/listing'
 import { createParariusAdapter } from './adapters/pararius'
 import { createFundaAdapter } from './adapters/funda'
+import { createHuurwoningenAdapter } from './adapters/huurwoningen'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 interface ScrapeResult {
@@ -14,6 +15,7 @@ function createAdapters(apifyToken: string): ScraperAdapter[] {
   return [
     createParariusAdapter(apifyToken),
     createFundaAdapter(apifyToken),
+    createHuurwoningenAdapter(apifyToken),
   ]
 }
 
