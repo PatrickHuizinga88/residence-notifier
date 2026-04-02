@@ -22,7 +22,8 @@ ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 INSERT INTO app_settings (key, value) VALUES
   ('site_url', 'https://your-site.netlify.app'),
   ('resend_api_key', ''),
-  ('notification_email', '');
+  ('notification_email', ''),
+  ('notification_from', 'HuurRadar <onboarding@resend.dev>');
 
 -- ============================================================================
 -- Function: trigger scrape via HTTP POST to your Netlify endpoint
@@ -52,6 +53,7 @@ RETURNS void AS $$
 DECLARE
   resend_key text;
   recipient text;
+  sender text;
   site_url text;
   listing_count integer;
   email_html text;
@@ -59,6 +61,7 @@ DECLARE
 BEGIN
   SELECT value INTO resend_key FROM app_settings WHERE key = 'resend_api_key';
   SELECT value INTO recipient FROM app_settings WHERE key = 'notification_email';
+  SELECT value INTO sender FROM app_settings WHERE key = 'notification_from';
   SELECT value INTO site_url FROM app_settings WHERE key = 'site_url';
 
   -- Skip if not configured
@@ -131,7 +134,7 @@ BEGIN
       'Content-Type', 'application/json'
     ),
     body := jsonb_build_object(
-      'from', 'HuurRadar <onboarding@resend.dev>',
+      'from', COALESCE(sender, 'HuurRadar <onboarding@resend.dev>'),
       'to', recipient,
       'subject', '🏠 ' || listing_count || ' nieuwe huurwoning(en) gevonden',
       'html', email_html
