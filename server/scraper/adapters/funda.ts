@@ -32,38 +32,63 @@ function parsePriceToCents(value: unknown): number {
 }
 
 function normalizeResult(raw: Record<string, unknown>): RawListing | null {
-  const title = (raw.title || raw.name || raw.address || '') as string
-  const price = parsePriceToCents(raw.price || raw.rentPrice || raw.pricePerMonth || raw.sellingPrice)
-  const url = (raw.url || raw.link || raw.propertyUrl || '') as string
+  // Funda uses nested address object
+  const addr = (raw.address || {}) as Record<string, unknown>
+  const city = (addr.city || '') as string
+  const neighborhood = (addr.neighbourhood || addr.wijk || '') as string
+  const province = (addr.province || '') as string
+
+  // Price can be nested or flat
+  const price = parsePriceToCents(raw.rent_price || raw.price || raw.offered_since)
+
+  // URL
+  const relativeUrl = (raw.relative_url || '') as string
+  const url = relativeUrl
+    ? `https://www.funda.nl${relativeUrl}`
+    : (raw.url || raw.link || '') as string
+
+  // Title: Funda often uses address as title
+  const street = (addr.street || addr.house_number
+    ? `${addr.street || ''} ${addr.house_number || ''}`.trim()
+    : '') as string
+  const title = (raw.title || raw.name || street || '') as string
 
   if (!title || !price || !url) return null
 
-  const city = (raw.city || raw.plaats || raw.location || '') as string
-  const sourceListingId = url.split('/').filter(Boolean).pop() || url
+  // Source listing ID from URL or Funda's internal ID
+  const sourceListingId = (raw.id || raw.global_id || relativeUrl.split('/').filter(Boolean).pop() || url) as string
+
+  // Agent info
+  const agents = raw.agent as Array<Record<string, unknown>> | undefined
+
+  // Images
+  const mediaItems = raw.media_items as Array<Record<string, unknown>> | undefined
+  const images = mediaItems
+    ?.filter(m => m.type === 'image' || m.url)
+    .map(m => (m.url || m.relative_url) as string)
+    .filter(Boolean)
 
   return {
-    source_listing_id: sourceListingId,
+    source_listing_id: String(sourceListingId),
     source_url: url,
     title,
-    description: (raw.description || raw.text || raw.fullDescription) as string | undefined,
+    description: (raw.description || raw.text || '') as string | undefined,
     price_monthly: price,
     city: city || 'Onbekend',
-    neighborhood: (raw.neighborhood || raw.district || raw.buurt) as string | undefined,
-    postal_code: (raw.postalCode || raw.zipCode || raw.postcode) as string | undefined,
-    address: (raw.address || raw.street || raw.adres) as string | undefined,
-    latitude: raw.latitude as number | undefined || raw.lat as number | undefined,
-    longitude: raw.longitude as number | undefined || raw.lng as number | undefined || raw.lon as number | undefined,
-    surface_m2: raw.livingArea as number | undefined || raw.surfaceArea as number | undefined || raw.woonoppervlakte as number | undefined,
-    rooms: raw.rooms as number | undefined || raw.numberOfRooms as number | undefined || raw.aantalKamers as number | undefined,
-    bedrooms: raw.bedrooms as number | undefined || raw.numberOfBedrooms as number | undefined,
-    property_type: parsePropertyType((raw.propertyType || raw.type || raw.soortWoning || '') as string),
-    furnished: parseFurnished((raw.interior || raw.furnished || raw.interieur || '') as string),
-    available_from: (raw.availableFrom || raw.availability || raw.aanvaarding) as string | undefined,
-    energy_label: (raw.energyLabel || raw.energyRating || raw.energielabel) as string | undefined,
-    images: Array.isArray(raw.images) ? raw.images as string[]
-      : Array.isArray(raw.photos) ? raw.photos as string[]
-      : undefined,
-    landlord_type: (raw.realEstateAgent || raw.makelaar) ? 'agency' : undefined,
+    neighborhood: neighborhood || undefined,
+    postal_code: (addr.postal_code || addr.postcode || raw.postal_code) as string | undefined,
+    address: street || undefined,
+    latitude: (addr.lat || raw.latitude) as number | undefined,
+    longitude: (addr.lng || raw.longitude) as number | undefined,
+    surface_m2: (raw.living_area || raw.surface_area || raw.plot_area) as number | undefined,
+    rooms: (raw.number_of_rooms || raw.rooms) as number | undefined,
+    bedrooms: (raw.number_of_bedrooms || raw.bedrooms) as number | undefined,
+    property_type: parsePropertyType((raw.property_type || raw.type || raw.category || '') as string),
+    furnished: parseFurnished((raw.interior || raw.furnished || '') as string),
+    available_from: (raw.available_from || raw.availability || raw.offered_since) as string | undefined,
+    energy_label: (raw.energy_label || raw.energy_rating) as string | undefined,
+    images: images?.length ? images : undefined,
+    landlord_type: agents?.length ? 'agency' : undefined,
   }
 }
 
