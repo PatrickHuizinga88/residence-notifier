@@ -78,31 +78,28 @@ export function createFundaAdapter(apiToken: string): ScraperAdapter {
     },
 
     async fetchListings(): Promise<RawListing[]> {
-      // Scrape per stad met prijsfilter
+      // Build search URLs per city with price filter
+      const searchUrls = scrapeFilters.cities.map(city =>
+        `https://www.funda.nl/zoeken/huur?selected_area=["${city}"]&price="-${scrapeFilters.maxPrice}"&availability=["available"]`
+      )
+
+      console.log(`[funda] Scraping ${searchUrls.length} cities...`)
+
       const allItems: Record<string, unknown>[] = []
 
-      for (const city of scrapeFilters.cities) {
-        const searchUrl = `https://www.funda.nl/zoeken/huur/?selected_area=%5B%22${city}%22%5D&price=%22-${scrapeFilters.maxPrice}%22&availability=%5B%22available%22%5D`
-        console.log(`[funda] Scraping ${city}...`)
-
-        try {
-          const items = await runApifyActor(ACTOR_ID, {
-            searchUrl,
-            maxItems: 50,
-          }, apiToken)
-          allItems.push(...items)
-          console.log(`[funda] ${city}: ${items.length} items`)
-        } catch (error) {
-          console.error(`[funda] ${city} failed:`, error)
-        }
+      try {
+        const items = await runApifyActor(ACTOR_ID, {
+          searchUrls,
+          maxItems: 200,
+        }, apiToken)
+        allItems.push(...items)
+        console.log(`[funda] Apify returned ${items.length} items`)
+      } catch (error) {
+        console.error(`[funda] Scraping failed:`, error)
       }
 
-      const items = allItems
-
-      console.log(`[funda] Apify returned ${items.length} items`)
-
       const listings: RawListing[] = []
-      for (const item of items) {
+      for (const item of allItems) {
         const normalized = normalizeResult(item)
         if (normalized) listings.push(normalized)
       }
