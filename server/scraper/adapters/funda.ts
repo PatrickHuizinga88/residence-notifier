@@ -31,6 +31,20 @@ function parsePriceToCents(value: unknown): number {
   return 0
 }
 
+/** Safely parse a value to integer or return undefined */
+function toInt(value: unknown): number | undefined {
+  if (value === null || value === undefined) return undefined
+  const n = typeof value === 'string' ? parseInt(value, 10) : Number(value)
+  return isNaN(n) ? undefined : Math.round(n)
+}
+
+/** Safely parse to float or return undefined */
+function toFloat(value: unknown): number | undefined {
+  if (value === null || value === undefined) return undefined
+  const n = Number(value)
+  return isNaN(n) ? undefined : n
+}
+
 function normalizeResult(raw: Record<string, unknown>): RawListing | null {
   // Nested address object
   const addr = (raw.address || {}) as Record<string, unknown>
@@ -85,11 +99,11 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
     neighborhood: neighborhood || undefined,
     postal_code: (addr.postal_code || addr.postcode) as string | undefined,
     address: street || undefined,
-    latitude: (addr.lat || addr.latitude) as number | undefined,
-    longitude: (addr.lng || addr.longitude) as number | undefined,
-    surface_m2: (raw.floor_area || raw.living_area) as number | undefined,
-    rooms: raw.number_of_rooms as number | undefined,
-    bedrooms: raw.number_of_bedrooms as number | undefined,
+    latitude: toFloat(addr.lat || addr.latitude),
+    longitude: toFloat(addr.lng || addr.longitude),
+    surface_m2: toInt(raw.floor_area || raw.living_area),
+    rooms: toInt(raw.number_of_rooms),
+    bedrooms: toInt(raw.number_of_bedrooms),
     property_type: parsePropertyType((raw.object_type || raw.type || '') as string),
     furnished: parseFurnished((raw.interior || '') as string),
     available_from: (raw.offered_since || raw.publish_date) as string | undefined,

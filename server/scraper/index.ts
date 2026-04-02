@@ -55,7 +55,7 @@ async function upsertListings(
         .eq('id', existing.id)
       updatedCount++
     } else {
-      await supabase
+      const { error } = await supabase
         .from('listings')
         .insert({
           source,
@@ -74,18 +74,23 @@ async function upsertListings(
           rooms: listing.rooms,
           bedrooms: listing.bedrooms,
           property_type: listing.property_type,
-          furnished: listing.furnished,
+          furnished: listing.furnished || null,
           available_from: listing.available_from,
           energy_label: listing.energy_label,
           images: listing.images,
-          landlord_type: listing.landlord_type,
+          landlord_type: listing.landlord_type || null,
           pets_allowed: listing.pets_allowed,
           income_requirement: listing.income_requirement,
           status: 'active',
           first_seen_at: new Date().toISOString(),
           last_seen_at: new Date().toISOString(),
         })
-      newCount++
+
+      if (error) {
+        console.error(`[scraper] Insert failed for "${listing.title}":`, error.message, error.details)
+      } else {
+        newCount++
+      }
     }
   }
 
