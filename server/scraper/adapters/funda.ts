@@ -105,7 +105,7 @@ export function createFundaAdapter(apiToken: string): ScraperAdapter {
     async fetchListings(): Promise<RawListing[]> {
       // Build search URLs per city with price filter
       const searchUrls = scrapeFilters.cities.map(city =>
-        `https://www.funda.nl/zoeken/huur?selected_area=["${city}"]&price="-${scrapeFilters.maxPrice}"&availability=["available"]`
+        `https://www.funda.nl/zoeken/huur/?selected_area=[%22${city}%22]&price=%22-${scrapeFilters.maxPrice}%22&availability=[%22available%22]`
       )
 
       console.log(`[funda] Scraping ${searchUrls.length} cities...`)
