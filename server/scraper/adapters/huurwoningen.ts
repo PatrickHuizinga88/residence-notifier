@@ -114,6 +114,13 @@ export function createHuurwoningenAdapter(apiToken: string): ScraperAdapter {
           maxPagesPerCrawl: startUrls.length,
         }, apiToken)
 
+        console.log(`[huurwoningen] Raw Apify response: ${items.length} items`)
+        if (items.length > 0) {
+          console.log(`[huurwoningen] First item type: ${typeof items[0]}, isArray: ${Array.isArray(items[0])}`)
+          console.log(`[huurwoningen] First item keys:`, Object.keys(items[0] as object))
+          console.log(`[huurwoningen] First item sample:`, JSON.stringify(items[0]).substring(0, 500))
+        }
+
         for (const item of items) {
           if (Array.isArray(item)) {
             allResults.push(...item)
