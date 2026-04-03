@@ -60,6 +60,7 @@ async function loginWithGoogle() {
               placeholder="je@email.nl"
               icon="i-lucide-mail"
               required
+              class="w-full"
             />
           </UFormField>
 
