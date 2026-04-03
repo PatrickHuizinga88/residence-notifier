@@ -86,7 +86,11 @@ function formatPrice(cents: number): string {
 
 <template>
   <UContainer class="py-8">
-    <h1 class="text-2xl font-bold mb-6">Huurwoningen</h1>
+    <h1 class="text-2xl font-bold mb-2">Huurwoningen</h1>
+
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+      Standaard gefilterd op €800–€1.500 /mnd, min. 25 m² in Eindhoven, Boxtel en Veghel.
+    </p>
 
     <!-- Filters -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8 items-end">
