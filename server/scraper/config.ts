@@ -17,6 +17,7 @@ export const scrapeFilters = {
     'nuenen',
     'geldrop',
     'veldhoven',
+    'veghel',
   ],
 
   /** Maximale huurprijs in euro's */
