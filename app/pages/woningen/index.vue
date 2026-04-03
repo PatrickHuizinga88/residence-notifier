@@ -4,8 +4,14 @@ import type { Listing, PropertyType } from '~~/types/listing'
 const route = useRoute()
 const supabase = useSupabaseClient()
 
+const cityOptions = [
+  { label: 'Eindhoven', value: 'Eindhoven' },
+  { label: 'Boxtel', value: 'Boxtel' },
+  { label: 'Veghel', value: 'Veghel' },
+]
+
 const filters = reactive({
-  city: (route.query.city as string) || '',
+  cities: ['Eindhoven', 'Boxtel', 'Veghel'] as string[],
   maxPrice: route.query.max_price ? Number(route.query.max_price) : undefined,
   minSurface: undefined as number | undefined,
   minRooms: undefined as number | undefined,
@@ -20,8 +26,8 @@ const { data: listings, status } = useAsyncData('listings', async () => {
     .order('first_seen_at', { ascending: false })
     .limit(50)
 
-  if (filters.city) {
-    query = query.ilike('city', `%${filters.city}%`)
+  if (filters.cities.length) {
+    query = query.in('city', filters.cities)
   }
   if (filters.maxPrice) {
     query = query.lte('price_monthly', filters.maxPrice * 100)
@@ -41,7 +47,7 @@ const { data: listings, status } = useAsyncData('listings', async () => {
   if (error) throw error
   return data as Listing[]
 }, {
-  watch: [() => filters.city, () => filters.maxPrice, () => filters.minSurface, () => filters.minRooms, () => filters.propertyType],
+  watch: [() => [...filters.cities], () => filters.maxPrice, () => filters.minSurface, () => filters.minRooms, () => filters.propertyType],
 })
 
 const propertyTypeOptions = [
@@ -66,12 +72,22 @@ function formatPrice(cents: number): string {
     <h1 class="text-2xl font-bold mb-6">Huurwoningen</h1>
 
     <!-- Filters -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
-      <UInput
-        v-model="filters.city"
-        placeholder="Stad"
-        icon="i-lucide-map-pin"
-      />
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8 items-end">
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Steden</span>
+        <div class="flex flex-wrap gap-3">
+          <UCheckbox
+            v-for="city in cityOptions"
+            :key="city.value"
+            :label="city.label"
+            :model-value="filters.cities.includes(city.value)"
+            @update:model-value="(checked: boolean) => {
+              if (checked) filters.cities.push(city.value)
+              else filters.cities = filters.cities.filter(c => c !== city.value)
+            }"
+          />
+        </div>
+      </div>
       <UInput
         v-model="filters.maxPrice"
         type="number"
