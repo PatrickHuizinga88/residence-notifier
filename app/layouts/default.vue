@@ -3,7 +3,6 @@ const user = useSupabaseUser()
 
 const navLinks = [
   { label: 'Woningen', to: '/woningen', icon: 'i-lucide-home' },
-  { label: 'Inzichten', to: '/inzichten', icon: 'i-lucide-bar-chart-3' },
 ]
 
 const userMenuItems = computed(() => {
@@ -49,6 +48,7 @@ async function logout() {
           <UDropdownMenu :items="userMenuItems">
             <UButton
               :icon="user ? 'i-lucide-user' : 'i-lucide-log-in'"
+              :label="user ? undefined : 'Inloggen'"
               variant="ghost"
               color="neutral"
             />
