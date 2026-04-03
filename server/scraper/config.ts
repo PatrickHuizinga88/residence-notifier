@@ -20,6 +20,9 @@ export const scrapeFilters = {
     'veghel',
   ],
 
+  /** Minimale huurprijs in euro's */
+  minPrice: 800,
+
   /** Maximale huurprijs in euro's */
   maxPrice: 1500,
 

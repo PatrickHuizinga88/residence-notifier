@@ -130,7 +130,7 @@ export function createFundaAdapter(apiToken: string): ScraperAdapter {
     async fetchListings(): Promise<RawListing[]> {
       // Build search URLs per city with price filter
       const searchUrls = scrapeFilters.cities.map(city =>
-        `https://www.funda.nl/zoeken/huur/?selected_area=[%22${city}%22]&price=%22-${scrapeFilters.maxPrice}%22&availability=[%22available%22]`
+        `https://www.funda.nl/zoeken/huur/?selected_area=[%22${city}%22]&price=%22${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}%22&availability=[%22available%22]`
       )
 
       console.log(`[funda] Scraping ${searchUrls.length} cities...`)
@@ -140,7 +140,7 @@ export function createFundaAdapter(apiToken: string): ScraperAdapter {
       try {
         const items = await runApifyActor(ACTOR_ID, {
           searchUrls,
-          maxItems: 200,
+          maxItems: 100,
         }, apiToken)
         allItems.push(...items)
         console.log(`[funda] Apify returned ${items.length} items`)

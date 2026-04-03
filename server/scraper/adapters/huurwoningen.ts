@@ -131,7 +131,7 @@ export function createHuurwoningenAdapter(apiToken: string): ScraperAdapter {
 
     async fetchListings(): Promise<RawListing[]> {
       const startUrls = scrapeFilters.cities.map(city => ({
-        url: `https://www.huurwoningen.nl/in/${city}/?price=0-${scrapeFilters.maxPrice}`,
+        url: `https://www.huurwoningen.nl/in/${city}/?price=${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}`,
       }))
 
       console.log(`[huurwoningen] Scraping ${startUrls.length} cities via Web Scraper...`)
