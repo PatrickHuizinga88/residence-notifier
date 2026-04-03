@@ -21,4 +21,7 @@ export const scrapeFilters = {
 
   /** Maximale huurprijs in euro's */
   maxPrice: 1500,
+
+  /** Minimale oppervlakte in m² */
+  minSurface: 25,
 }

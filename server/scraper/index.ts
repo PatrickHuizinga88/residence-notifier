@@ -2,6 +2,7 @@ import type { RawListing, ScraperAdapter } from "~~/types/listing";
 import { createParariusAdapter } from "./adapters/pararius";
 import { createFundaAdapter } from "./adapters/funda";
 import { createHuurwoningenAdapter } from "./adapters/huurwoningen";
+import { scrapeFilters } from "./config";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface ScrapeResult {
@@ -126,7 +127,13 @@ export async function runScraper(
       }
 
       const rawListings = await adapter.fetchListings();
-      const { newCount, updatedCount } = await upsertListings(supabase, source, rawListings);
+
+      // Filter op minimale oppervlakte
+      const filtered = scrapeFilters.minSurface
+        ? rawListings.filter(l => !l.surface_m2 || l.surface_m2 >= scrapeFilters.minSurface)
+        : rawListings;
+
+      const { newCount, updatedCount } = await upsertListings(supabase, source, filtered);
 
       if (logEntry) {
         await supabase
