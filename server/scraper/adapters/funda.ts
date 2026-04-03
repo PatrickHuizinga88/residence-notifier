@@ -1,5 +1,5 @@
 import type { RawListing, ScraperAdapter, PropertyType, FurnishedStatus } from '~~/types/listing'
-import { runApifyActor } from '~~/server/utils/apify'
+import { runApifyActor, startApifyActor } from '~~/server/utils/apify'
 import { scrapeFilters } from '../config'
 
 // Apify Actor: easyapi/funda-nl-scraper
@@ -118,48 +118,50 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
 }
 
 export function createFundaAdapter(apiToken: string): ScraperAdapter {
+  const getActorInput = () => {
+    const searchUrls = scrapeFilters.cities.map(city =>
+      `https://www.funda.nl/zoeken/huur/?selected_area=[%22${city}%22]&price=%22${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}%22&availability=[%22available%22]`
+    )
+    return { searchUrls, maxItems: 100 }
+  }
+
   return {
     getSourceId() {
       return 'funda'
     },
 
+    getActorInput,
+
     async healthCheck(): Promise<boolean> {
       return !!apiToken
     },
 
-    async fetchListings(): Promise<RawListing[]> {
-      // Build search URLs per city with price filter
-      const searchUrls = scrapeFilters.cities.map(city =>
-        `https://www.funda.nl/zoeken/huur/?selected_area=[%22${city}%22]&price=%22${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}%22&availability=[%22available%22]`
-      )
+    async startAsync(webhookUrl: string) {
+      console.log(`[funda] Starting async run...`)
+      return startApifyActor(ACTOR_ID, getActorInput(), apiToken, webhookUrl)
+    },
 
-      console.log(`[funda] Scraping ${searchUrls.length} cities...`)
-
-      const allItems: Record<string, unknown>[] = []
-
-      try {
-        const items = await runApifyActor(ACTOR_ID, {
-          searchUrls,
-          maxItems: 100,
-        }, apiToken)
-        allItems.push(...items)
-        console.log(`[funda] Apify returned ${items.length} items`)
-        if (items.length > 0) {
-          console.log(`[funda] Sample item keys:`, Object.keys(items[0]))
-          console.log(`[funda] Sample item:`, JSON.stringify(items[0]).slice(0, 500))
-        }
-      } catch (error) {
-        console.error(`[funda] Scraping failed:`, error)
-      }
-
+    normalizeResults(items: Record<string, unknown>[]): RawListing[] {
+      console.log(`[funda] Normalizing ${items.length} items`)
       const listings: RawListing[] = []
-      for (const item of allItems) {
+      for (const item of items) {
         const normalized = normalizeResult(item)
         if (normalized) listings.push(normalized)
       }
-
       console.log(`[funda] Normalized ${listings.length} listings`)
       return listings
+    },
+
+    async fetchListings(): Promise<RawListing[]> {
+      console.log(`[funda] Scraping ${scrapeFilters.cities.length} cities...`)
+      try {
+        const items = await runApifyActor(ACTOR_ID, getActorInput(), apiToken)
+        console.log(`[funda] Apify returned ${items.length} items`)
+        return this.normalizeResults(items)
+      } catch (error) {
+        console.error(`[funda] Scraping failed:`, error)
+        return []
+      }
     },
   }
 }

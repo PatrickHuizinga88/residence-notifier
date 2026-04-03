@@ -67,6 +67,9 @@ export interface RawListing {
 
 export interface ScraperAdapter {
   fetchListings(): Promise<RawListing[]>
+  startAsync(webhookUrl: string): Promise<{ runId: string; datasetId: string }>
+  normalizeResults(items: Record<string, unknown>[]): RawListing[]
   getSourceId(): string
   healthCheck(): Promise<boolean>
+  getActorInput(): Record<string, unknown>
 }

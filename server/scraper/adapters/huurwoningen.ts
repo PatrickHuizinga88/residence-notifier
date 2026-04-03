@@ -1,5 +1,5 @@
 import type { RawListing, ScraperAdapter, PropertyType } from '~~/types/listing'
-import { runApifyActor } from '~~/server/utils/apify'
+import { runApifyActor, startApifyActor } from '~~/server/utils/apify'
 import { scrapeFilters } from '../config'
 
 const ACTOR_ID = 'apify~puppeteer-scraper'
@@ -119,69 +119,77 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
   }
 }
 
+function unwrapApifyItems(items: Record<string, unknown>[]): Record<string, unknown>[] {
+  const results: Record<string, unknown>[] = []
+  for (const item of items) {
+    if (Array.isArray(item)) {
+      results.push(...item)
+    } else if (item && typeof item === 'object' && !item['#error']) {
+      results.push(item)
+    }
+  }
+  return results
+}
+
 export function createHuurwoningenAdapter(apiToken: string): ScraperAdapter {
+  const getActorInput = () => {
+    const startUrls = scrapeFilters.cities.map(city => ({
+      url: `https://www.huurwoningen.nl/in/${city}/?price=${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}`,
+    }))
+    return {
+      startUrls,
+      pageFunction: PAGE_FUNCTION,
+      proxyConfiguration: {
+        useApifyProxy: true,
+        apifyProxyGroups: ['RESIDENTIAL'],
+      },
+      useChrome: true,
+      launchContext: {
+        useChrome: true,
+        stealth: true,
+      },
+      maxPagesPerCrawl: startUrls.length * 10,
+    }
+  }
+
   return {
     getSourceId() {
       return 'huurwoningen'
     },
 
+    getActorInput,
+
     async healthCheck(): Promise<boolean> {
       return !!apiToken
     },
 
-    async fetchListings(): Promise<RawListing[]> {
-      const startUrls = scrapeFilters.cities.map(city => ({
-        url: `https://www.huurwoningen.nl/in/${city}/?price=${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}`,
-      }))
+    async startAsync(webhookUrl: string) {
+      console.log(`[huurwoningen] Starting async run...`)
+      return startApifyActor(ACTOR_ID, getActorInput(), apiToken, webhookUrl)
+    },
 
-      console.log(`[huurwoningen] Scraping ${startUrls.length} cities via Web Scraper...`)
-
-      let allResults: Record<string, unknown>[] = []
-
-      try {
-        const items = await runApifyActor(ACTOR_ID, {
-          startUrls,
-          pageFunction: PAGE_FUNCTION,
-          proxyConfiguration: {
-            useApifyProxy: true,
-            apifyProxyGroups: ['RESIDENTIAL'],
-          },
-          useChrome: true,
-          launchContext: {
-            useChrome: true,
-            stealth: true,
-          },
-          maxPagesPerCrawl: startUrls.length * 10,
-        }, apiToken)
-
-        console.log(`[huurwoningen] Raw Apify response: ${items.length} items`)
-        if (items.length > 0) {
-          console.log(`[huurwoningen] First item type: ${typeof items[0]}, isArray: ${Array.isArray(items[0])}`)
-          console.log(`[huurwoningen] First item keys:`, Object.keys(items[0] as object))
-          console.log(`[huurwoningen] First item sample:`, JSON.stringify(items[0]).substring(0, 500))
-        }
-
-        for (const item of items) {
-          if (Array.isArray(item)) {
-            allResults.push(...item)
-          } else if (item && typeof item === 'object') {
-            allResults.push(item)
-          }
-        }
-      } catch (error) {
-        console.error('[huurwoningen] Web Scraper failed:', error)
-      }
-
-      console.log(`[huurwoningen] Web Scraper returned ${allResults.length} total items`)
-
+    normalizeResults(items: Record<string, unknown>[]): RawListing[] {
+      const allResults = unwrapApifyItems(items)
+      console.log(`[huurwoningen] Unwrapped ${allResults.length} items from ${items.length} raw`)
       const listings: RawListing[] = []
       for (const item of allResults) {
         const normalized = normalizeResult(item)
         if (normalized) listings.push(normalized)
       }
-
       console.log(`[huurwoningen] Normalized ${listings.length} listings`)
       return listings
+    },
+
+    async fetchListings(): Promise<RawListing[]> {
+      console.log(`[huurwoningen] Scraping ${scrapeFilters.cities.length} cities...`)
+      try {
+        const items = await runApifyActor(ACTOR_ID, getActorInput(), apiToken)
+        console.log(`[huurwoningen] Apify returned ${items.length} items`)
+        return this.normalizeResults(items)
+      } catch (error) {
+        console.error('[huurwoningen] Scraping failed:', error)
+        return []
+      }
     },
   }
 }
