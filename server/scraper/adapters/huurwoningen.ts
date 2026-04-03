@@ -6,8 +6,24 @@ const ACTOR_ID = 'apify~puppeteer-scraper'
 
 const PAGE_FUNCTION = `
 async function pageFunction(context) {
-  const { page } = context;
+  const { page, request, enqueueRequest } = context;
   await page.waitForSelector('.listing-search-item--for-rent', { timeout: 15000 });
+
+  // Enqueue next page if it exists
+  const nextPageUrl = await page.evaluate(() => {
+    const nextLink = document.querySelector('.pagination__item--next a');
+    if (!nextLink) return null;
+    // The site has a bug with double '?' in pagination hrefs, so build URL manually
+    const dataPage = nextLink.getAttribute('data-page');
+    if (!dataPage) return null;
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('page', dataPage);
+    return currentUrl.toString();
+  });
+
+  if (nextPageUrl) {
+    await enqueueRequest({ url: nextPageUrl });
+  }
 
   const listings = await page.evaluate(() => {
     const results = [];
@@ -135,7 +151,7 @@ export function createHuurwoningenAdapter(apiToken: string): ScraperAdapter {
             useChrome: true,
             stealth: true,
           },
-          maxPagesPerCrawl: startUrls.length,
+          maxPagesPerCrawl: startUrls.length * 10,
         }, apiToken)
 
         console.log(`[huurwoningen] Raw Apify response: ${items.length} items`)
