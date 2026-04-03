@@ -45,14 +45,24 @@ async function logout() {
             color="neutral"
           />
 
-          <UDropdownMenu :items="userMenuItems">
+          <!-- Ingelogd: dropdown met dashboard/uitloggen -->
+          <UDropdownMenu v-if="user" :items="userMenuItems">
             <UButton
-              :icon="user ? 'i-lucide-user' : 'i-lucide-log-in'"
-              :label="user ? undefined : 'Inloggen'"
+              icon="i-lucide-user"
               variant="ghost"
               color="neutral"
             />
           </UDropdownMenu>
+
+          <!-- Niet ingelogd: directe link -->
+          <UButton
+            v-else
+            to="/login"
+            label="Inloggen"
+            icon="i-lucide-log-in"
+            variant="ghost"
+            color="neutral"
+          />
         </nav>
       </header>
     </UContainer>

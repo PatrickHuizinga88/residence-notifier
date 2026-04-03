@@ -10,6 +10,23 @@ const cityOptions = [
   { label: 'Veghel', value: 'Veghel' },
 ]
 
+const citySearch = ref('')
+const filteredCityOptions = computed(() =>
+  cityOptions.filter(c => c.label.toLowerCase().includes(citySearch.value.toLowerCase()))
+)
+
+const cityButtonLabel = computed(() => {
+  if (filters.cities.length === 0) return 'Selecteer steden'
+  if (filters.cities.length === cityOptions.length) return 'Alle steden'
+  return filters.cities.join(', ')
+})
+
+function toggleCity(value: string) {
+  const idx = filters.cities.indexOf(value)
+  if (idx >= 0) filters.cities.splice(idx, 1)
+  else filters.cities.push(value)
+}
+
 const filters = reactive({
   cities: ['Eindhoven', 'Boxtel', 'Veghel'] as string[],
   maxPrice: route.query.max_price ? Number(route.query.max_price) : undefined,
@@ -73,21 +90,45 @@ function formatPrice(cents: number): string {
 
     <!-- Filters -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8 items-end">
-      <div class="flex flex-col gap-2">
-        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Steden</span>
-        <div class="flex flex-wrap gap-3">
-          <UCheckbox
-            v-for="city in cityOptions"
-            :key="city.value"
-            :label="city.label"
-            :model-value="filters.cities.includes(city.value)"
-            @update:model-value="(checked: boolean) => {
-              if (checked) filters.cities.push(city.value)
-              else filters.cities = filters.cities.filter(c => c !== city.value)
-            }"
-          />
-        </div>
-      </div>
+      <UPopover>
+        <UButton
+          :label="cityButtonLabel"
+          icon="i-lucide-map-pin"
+          trailing-icon="i-lucide-chevron-down"
+          variant="outline"
+          color="neutral"
+          class="w-full justify-between"
+          truncate
+        />
+        <template #content>
+          <div class="p-2 w-56">
+            <UInput
+              v-model="citySearch"
+              placeholder="Zoek stad..."
+              icon="i-lucide-search"
+              size="sm"
+              class="mb-2 w-full"
+              autofocus
+            />
+            <div class="flex flex-col gap-1">
+              <label
+                v-for="city in filteredCityOptions"
+                :key="city.value"
+                class="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+              >
+                <UCheckbox
+                  :model-value="filters.cities.includes(city.value)"
+                  @update:model-value="toggleCity(city.value)"
+                />
+                <span class="text-sm">{{ city.label }}</span>
+              </label>
+              <p v-if="!filteredCityOptions.length" class="text-sm text-gray-500 px-2 py-1">
+                Geen steden gevonden
+              </p>
+            </div>
+          </div>
+        </template>
+      </UPopover>
       <UInput
         v-model="filters.maxPrice"
         type="number"
