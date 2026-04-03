@@ -1,2 +1,21 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+/* Minimum touch target size on mobile (40px) */
+@media (max-width: 639px) {
+  :root {
+    --ui-button-height-md: 2.5rem;
+    --ui-input-height-md: 2.5rem;
+  }
+
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  .ui-input,
+  .ui-select,
+  .ui-button {
+    min-height: 2.5rem;
+  }
+}
