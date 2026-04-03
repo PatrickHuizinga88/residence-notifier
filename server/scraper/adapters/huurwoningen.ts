@@ -35,7 +35,20 @@ async function pageFunction(context) {
       const roomsMatch = roomsText.match(/(\\d+)/);
 
       const imgEl = el.querySelector('.picture__image');
-      const imgSrc = imgEl?.getAttribute('data-src') || imgEl?.getAttribute('src');
+      const sourceEl = el.querySelector('wc-picture source, picture source');
+      let imgSrc = imgEl?.getAttribute('src') || imgEl?.getAttribute('data-src');
+
+      // Fallback: extract a usable URL from srcset (pick ~600w)
+      if (!imgSrc && sourceEl) {
+        const srcset = sourceEl.getAttribute('srcset') || '';
+        const match = srcset.match(/(https?:\\/\\/[^\\s]+width=600[^\\s]*)/);
+        if (match) imgSrc = match[1];
+        else {
+          // Just grab the first URL from srcset
+          const firstMatch = srcset.match(/(https?:\\/\\/[^\\s,]+)/);
+          if (firstMatch) imgSrc = firstMatch[1];
+        }
+      }
 
       results.push({
         sourceId,
