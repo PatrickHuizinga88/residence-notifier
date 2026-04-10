@@ -22,6 +22,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    apiKey: process.env.API_KEY,
     apifyApiToken: process.env.APIFY_API_TOKEN,
     openaiApiKey: process.env.OPENAI_API_KEY,
     twilioAccountSid: process.env.TWILIO_ACCOUNT_SID,
