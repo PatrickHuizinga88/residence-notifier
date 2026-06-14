@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { createFundaAdapter } from "../scraper/adapters/funda";
-import { createHuurwoningenAdapter } from "../scraper/adapters/huurwoningen";
+import { createParariusAdapter } from "../scraper/adapters/pararius";
 
 export default defineEventHandler(async (event) => {
   const apifyToken = process.env.APIFY_API_TOKEN;
@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   const adapters = [
     createFundaAdapter(apifyToken),
-    createHuurwoningenAdapter(apifyToken),
+    createParariusAdapter(apifyToken),
   ];
 
   const runs: { source: string; runId: string; datasetId: string }[] = [];

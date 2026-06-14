@@ -1,4 +1,4 @@
-import type { RawListing, ScraperAdapter, PropertyType, FurnishedStatus } from '~~/types/listing'
+import type { RawListing, ScraperAdapter, PropertyType } from '~~/types/listing'
 import { runApifyActor, startApifyActor } from '~~/server/utils/apify'
 import { scrapeFilters } from '../config'
 
@@ -12,14 +12,6 @@ function parsePropertyType(text: string): PropertyType {
   if (lower.includes('kamer') || lower.includes('room')) return 'room'
   if (lower.includes('studio')) return 'studio'
   return 'apartment'
-}
-
-function parseFurnished(text: string): FurnishedStatus | undefined {
-  const lower = (text || '').toLowerCase()
-  if (lower.includes('gemeubileerd') || lower.includes('furnished')) return 'furnished'
-  if (lower.includes('ongemeubileerd') || lower.includes('unfurnished')) return 'unfurnished'
-  if (lower.includes('bespreekbaar') || lower.includes('negotiable')) return 'negotiable'
-  return undefined
 }
 
 function parsePriceToCents(value: unknown): number {
@@ -56,11 +48,13 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
   const city = (addr.city || '') as string
   const neighborhood = (addr.neighbourhood || addr.wijk || '') as string
 
-  // Price: rent_price is an array like [1140]
+  // Price: selling_price is an array like [350000]
   const rawPrice = raw.price as Record<string, unknown> | undefined
   let price = 0
   if (rawPrice && typeof rawPrice === 'object') {
-    price = parsePriceToCents(unwrap(rawPrice.rent_price) || unwrap(rawPrice.amount) || unwrap(rawPrice.value))
+    price = parsePriceToCents(
+      unwrap(rawPrice.selling_price) || unwrap(rawPrice.asking_price) || unwrap(rawPrice.amount) || unwrap(rawPrice.value)
+    )
   }
 
   // URL
@@ -84,9 +78,6 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
   // Source ID
   const sourceListingId = String(raw.id || relativeUrl.split('/').filter(Boolean).pop() || url)
 
-  // Agent info
-  const agents = raw.agent as Array<Record<string, unknown>> | undefined
-
   // Images: photo_image_id is an array of path strings like "valentina_media/224/909/334.jpg"
   const photoIds = raw.photo_image_id as string[] | undefined
   const images = photoIds?.length
@@ -98,7 +89,7 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
     source_url: url,
     title,
     description: undefined,
-    price_monthly: price,
+    price,
     city: city || 'Onbekend',
     neighborhood: neighborhood || undefined,
     postal_code: (addr.postal_code || addr.postcode) as string | undefined,
@@ -109,18 +100,15 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
     rooms: toInt(raw.number_of_rooms),
     bedrooms: toInt(raw.number_of_bedrooms),
     property_type: parsePropertyType((raw.object_type || raw.type || '') as string),
-    furnished: parseFurnished((raw.interior || '') as string),
-    available_from: (raw.offered_since || raw.publish_date) as string | undefined,
     energy_label: (raw.energy_label) as string | undefined,
     images,
-    landlord_type: agents?.length ? 'agency' : undefined,
   }
 }
 
 export function createFundaAdapter(apiToken: string): ScraperAdapter {
   const getActorInput = () => {
     const searchUrls = scrapeFilters.cities.map(city =>
-      `https://www.funda.nl/zoeken/huur/?selected_area=[%22${city}%22]&price=%22${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}%22&availability=[%22available%22]`
+      `https://www.funda.nl/zoeken/koop/?selected_area=[%22${city}%22]&price=%22${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}%22&availability=[%22available%22]`
     )
     return { searchUrls, maxItems: 100 }
   }

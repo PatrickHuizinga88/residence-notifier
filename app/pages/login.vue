@@ -39,7 +39,7 @@ async function loginWithGoogle() {
   <UContainer class="py-16">
     <div class="max-w-sm mx-auto">
       <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold">Inloggen bij HuurRadar</h1>
+        <h1 class="text-2xl font-bold">Inloggen bij KoopRadar</h1>
         <p class="mt-2 text-gray-500">Log in om zoekprofielen en notificaties te beheren.</p>
       </div>
 

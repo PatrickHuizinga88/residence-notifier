@@ -65,12 +65,6 @@ const propertyTypeLabels: Record<string, string> = {
   room: 'Kamer',
   studio: 'Studio',
 }
-
-const furnishedLabels: Record<string, string> = {
-  furnished: 'Gemeubileerd',
-  unfurnished: 'Ongemeubileerd',
-  negotiable: 'Bespreekbaar',
-}
 </script>
 
 <template>
@@ -157,8 +151,8 @@ const furnishedLabels: Record<string, string> = {
               </div>
 
               <p class="text-3xl font-bold text-primary">
-                {{ formatPrice(listing.price_monthly) }}
-                <span class="text-sm font-normal text-gray-500">/mnd</span>
+                {{ formatPrice(listing.price) }}
+                <span class="text-sm font-normal text-gray-500">k.k.</span>
               </p>
 
               <USeparator />
@@ -181,21 +175,9 @@ const furnishedLabels: Record<string, string> = {
                   <dt class="text-gray-500">Type</dt>
                   <dd class="font-medium">{{ propertyTypeLabels[listing.property_type] }}</dd>
                 </div>
-                <div v-if="listing.furnished" class="flex justify-between">
-                  <dt class="text-gray-500">Inrichting</dt>
-                  <dd class="font-medium">{{ furnishedLabels[listing.furnished] }}</dd>
-                </div>
                 <div v-if="listing.energy_label" class="flex justify-between">
                   <dt class="text-gray-500">Energielabel</dt>
                   <dd class="font-medium">{{ listing.energy_label }}</dd>
-                </div>
-                <div v-if="listing.available_from" class="flex justify-between">
-                  <dt class="text-gray-500">Beschikbaar vanaf</dt>
-                  <dd class="font-medium">{{ new Date(listing.available_from).toLocaleDateString('nl-NL') }}</dd>
-                </div>
-                <div v-if="listing.pets_allowed !== null" class="flex justify-between">
-                  <dt class="text-gray-500">Huisdieren</dt>
-                  <dd class="font-medium">{{ listing.pets_allowed ? 'Toegestaan' : 'Niet toegestaan' }}</dd>
                 </div>
               </dl>
 

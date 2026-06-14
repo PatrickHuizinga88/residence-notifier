@@ -1,5 +1,5 @@
 /**
- * Standaard scraping filters voor HuurRadar.
+ * Standaard scraping filters voor KoopRadar.
  * Pas deze aan naar je eigen voorkeuren.
  */
 export const scrapeFilters = {
@@ -20,12 +20,12 @@ export const scrapeFilters = {
     'veghel',
   ],
 
-  /** Minimale huurprijs in euro's */
-  minPrice: 800,
+  /** Minimale koopprijs in euro's */
+  minPrice: 200000,
 
-  /** Maximale huurprijs in euro's */
-  maxPrice: 1500,
+  /** Maximale koopprijs in euro's */
+  maxPrice: 500000,
 
   /** Minimale oppervlakte in m² */
-  minSurface: 25,
+  minSurface: 50,
 }
