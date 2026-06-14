@@ -107,8 +107,10 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
 
 export function createFundaAdapter(apiToken: string): ScraperAdapter {
   const getActorInput = () => {
+    // Funda's actor verwacht een zoekresultaat-URL zonder trailing slash en
+    // mét search_result=1, anders herkent 'ie de pagina niet en komt er 0 terug.
     const searchUrls = scrapeFilters.cities.map(city =>
-      `https://www.funda.nl/zoeken/koop/?selected_area=[%22${city}%22]&price=%22${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}%22&availability=[%22available%22]`
+      `https://www.funda.nl/zoeken/koop?selected_area=[%22${city}%22]&price=%22${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}%22&availability=[%22available%22]&search_result=1`
     )
     return { searchUrls, maxItems: 100 }
   }
