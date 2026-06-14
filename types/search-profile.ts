@@ -1,4 +1,4 @@
-import type { PropertyType, FurnishedStatus } from './listing'
+import type { PropertyType } from './listing'
 
 export interface SearchProfile {
   id: string
@@ -12,7 +12,6 @@ export interface SearchProfile {
   min_rooms: number | null
   min_bedrooms: number | null
   property_types: PropertyType[] | null
-  furnished: FurnishedStatus[] | null
   radius_km: number | null
   center_latitude: number | null
   center_longitude: number | null

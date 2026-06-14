@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PropertyType, FurnishedStatus } from '~~/types/listing'
+import type { PropertyType } from '~~/types/listing'
 
 const route = useRoute()
 const supabase = useSupabaseClient()
@@ -18,7 +18,6 @@ const form = reactive({
   min_rooms: undefined as number | undefined,
   min_bedrooms: undefined as number | undefined,
   property_types: [] as PropertyType[],
-  furnished: [] as FurnishedStatus[],
 })
 
 const propertyTypeOptions = [
@@ -26,12 +25,6 @@ const propertyTypeOptions = [
   { label: 'Huis', value: 'house' as const },
   { label: 'Kamer', value: 'room' as const },
   { label: 'Studio', value: 'studio' as const },
-]
-
-const furnishedOptions = [
-  { label: 'Gemeubileerd', value: 'furnished' as const },
-  { label: 'Ongemeubileerd', value: 'unfurnished' as const },
-  { label: 'Bespreekbaar', value: 'negotiable' as const },
 ]
 
 // Load existing profile
@@ -53,7 +46,6 @@ if (!isNew) {
     form.min_rooms = data.min_rooms || undefined
     form.min_bedrooms = data.min_bedrooms || undefined
     form.property_types = data.property_types || []
-    form.furnished = data.furnished || []
   }
   loading.value = false
 }
@@ -71,7 +63,6 @@ async function save() {
     min_rooms: form.min_rooms || null,
     min_bedrooms: form.min_bedrooms || null,
     property_types: form.property_types.length ? form.property_types : null,
-    furnished: form.furnished.length ? form.furnished : null,
   }
 
   if (isNew) {
@@ -125,15 +116,15 @@ async function remove() {
 
       <div class="grid grid-cols-2 gap-4">
         <UFormField label="Min. prijs (€)">
-          <UInput v-model="form.min_price" type="number" placeholder="0" />
+          <UInput v-model="form.min_price" type="number" placeholder="200000" />
         </UFormField>
         <UFormField label="Max. prijs (€)">
-          <UInput v-model="form.max_price" type="number" placeholder="2500" />
+          <UInput v-model="form.max_price" type="number" placeholder="500000" />
         </UFormField>
       </div>
 
       <UFormField label="Min. oppervlakte (m²)">
-        <UInput v-model="form.min_surface_m2" type="number" placeholder="30" />
+        <UInput v-model="form.min_surface_m2" type="number" placeholder="50" />
       </UFormField>
 
       <div class="grid grid-cols-2 gap-4">
@@ -151,18 +142,6 @@ async function remove() {
             v-for="opt in propertyTypeOptions"
             :key="opt.value"
             v-model="form.property_types"
-            :value="opt.value"
-            :label="opt.label"
-          />
-        </div>
-      </UFormField>
-
-      <UFormField label="Inrichting">
-        <div class="flex flex-wrap gap-2">
-          <UCheckbox
-            v-for="opt in furnishedOptions"
-            :key="opt.value"
-            v-model="form.furnished"
             :value="opt.value"
             :label="opt.label"
           />

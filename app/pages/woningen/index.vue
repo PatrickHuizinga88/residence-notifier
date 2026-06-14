@@ -47,7 +47,7 @@ const { data: listings, status } = useAsyncData('listings', async () => {
     query = query.in('city', filters.cities)
   }
   if (filters.maxPrice) {
-    query = query.lte('price_monthly', filters.maxPrice * 100)
+    query = query.lte('price', filters.maxPrice * 100)
   }
   if (filters.minSurface) {
     query = query.gte('surface_m2', filters.minSurface)
@@ -86,10 +86,10 @@ function formatPrice(cents: number): string {
 
 <template>
   <UContainer class="py-8">
-    <h1 class="text-2xl font-bold mb-2">Huurwoningen</h1>
+    <h1 class="text-2xl font-bold mb-2">Koopwoningen</h1>
 
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-      Standaard gefilterd op €800–€1.500 /mnd, min. 25 m² in Eindhoven, Boxtel en Veghel.
+      Standaard gefilterd op €200.000–€270.000 en min. 50 m² in de regio Eindhoven–Meierij.
     </p>
 
     <!-- Filters -->
@@ -201,8 +201,8 @@ function formatPrice(cents: number): string {
           </div>
 
           <p class="text-2xl font-bold text-primary">
-            {{ formatPrice(listing.price_monthly) }}
-            <span class="text-sm font-normal text-gray-500">/mnd</span>
+            {{ formatPrice(listing.price) }}
+            <span class="text-sm font-normal text-gray-500">k.k.</span>
           </p>
 
           <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">

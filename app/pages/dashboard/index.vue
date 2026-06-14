@@ -106,7 +106,7 @@ function formatPrice(cents: number): string {
               <div class="min-w-0 flex-1">
                 <h3 class="font-medium truncate">{{ fav.listings.title }}</h3>
                 <p class="text-sm text-gray-500">
-                  {{ formatPrice(fav.listings.price_monthly) }}/mnd &middot; {{ fav.listings.city }}
+                  {{ formatPrice(fav.listings.price) }} k.k. &middot; {{ fav.listings.city }}
                 </p>
               </div>
             </div>

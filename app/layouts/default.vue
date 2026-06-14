@@ -31,7 +31,7 @@ async function logout() {
       <header class="flex items-center justify-between py-4">
         <NuxtLink to="/" class="flex items-center gap-2 text-xl font-bold text-primary">
           <UIcon name="i-lucide-radar" class="size-6" />
-          HuurRadar
+          KoopRadar
         </NuxtLink>
 
         <nav class="flex items-center gap-1">
@@ -74,7 +74,7 @@ async function logout() {
     <footer class="border-t border-gray-200 dark:border-gray-800 mt-16">
       <UContainer>
         <div class="py-8 text-center text-sm text-gray-500">
-          &copy; {{ new Date().getFullYear() }} HuurRadar — Open source huurwoning aggregator
+          &copy; {{ new Date().getFullYear() }} KoopRadar — Open source koopwoning aggregator
         </div>
       </UContainer>
     </footer>

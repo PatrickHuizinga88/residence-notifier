@@ -17,11 +17,11 @@ function search() {
       <UContainer>
         <div class="max-w-2xl mx-auto text-center">
           <h1 class="text-4xl font-bold tracking-tight sm:text-5xl">
-            Vind je huurwoning sneller met
-            <span class="text-primary">HuurRadar</span>
+            Vind je koopwoning sneller met
+            <span class="text-primary">KoopRadar</span>
           </h1>
           <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">
-            Alle huurwoningen van de grootste platforms op één plek. Met AI-matching en slimme notificaties mis je nooit meer een woning.
+            Alle koopwoningen van de grootste platforms op één plek. Met AI-matching en slimme notificaties mis je nooit meer een woning.
           </p>
 
           <!-- Search bar -->
@@ -36,7 +36,7 @@ function search() {
             <UInput
               v-model="maxPrice"
               type="number"
-              placeholder="Max. huurprijs"
+              placeholder="Max. koopprijs"
               icon="i-lucide-euro"
               size="lg"
               class="flex-1"
@@ -60,9 +60,9 @@ function search() {
             <div class="mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900 mb-4">
               <UIcon name="i-lucide-layers" class="size-6 text-primary" />
             </div>
-            <h3 class="font-semibold text-lg">5 Bronnen, 1 Platform</h3>
+            <h3 class="font-semibold text-lg">2 Bronnen, 1 Platform</h3>
             <p class="mt-2 text-gray-600 dark:text-gray-400">
-              Funda, Pararius, Huurwoningen.nl, Kamernet en HuurStunt — alles op één plek.
+              Funda en Pararius — alle koopwoningen op één plek.
             </p>
           </div>
           <div class="text-center">

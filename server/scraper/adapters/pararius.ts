@@ -1,5 +1,5 @@
-import type { RawListing, ScraperAdapter, PropertyType, FurnishedStatus } from '~~/types/listing'
-import { runApifyActor } from '~~/server/utils/apify'
+import type { RawListing, ScraperAdapter, PropertyType } from '~~/types/listing'
+import { runApifyActor, startApifyActor } from '~~/server/utils/apify'
 import { scrapeFilters } from '../config'
 
 // Apify's free generic Web Scraper (pay only for compute units)
@@ -29,7 +29,7 @@ async function pageFunction(context) {
     const url = href.startsWith('http') ? href : 'https://www.pararius.nl' + href;
     const sourceId = href.split('/').filter(Boolean).pop() || href;
 
-    // Extract city from URL: /huurwoning/[city]/...
+    // Extract city from URL: /koopwoning/[city]/...
     const urlParts = href.split('/').filter(Boolean);
     const cityFromUrl = urlParts.length >= 2 ? urlParts[1] : '';
 
@@ -83,14 +83,15 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
     : 'Onbekend'
 
   const subtitle = (raw.subtitle || '') as string
-  const neighborhood = subtitle.split(',').length > 1 ? subtitle.split(',')[0].trim() : undefined
+  const subtitleParts = subtitle.split(',')
+  const neighborhood = subtitleParts.length > 1 ? subtitleParts[0]?.trim() : undefined
   const postalMatch = subtitle.match(/\d{4}\s?[A-Z]{2}/)
 
   return {
     source_listing_id: (raw.sourceId || '') as string,
     source_url: url,
     title,
-    price_monthly: price * 100,
+    price: price * 100,
     city,
     neighborhood,
     postal_code: postalMatch ? postalMatch[0].replace(/\s/, '') : undefined,
@@ -101,55 +102,70 @@ function normalizeResult(raw: Record<string, unknown>): RawListing | null {
   }
 }
 
+/** Web Scraper wraps pageFunction results — each item may be an array of listings */
+function unwrapApifyItems(items: Record<string, unknown>[]): Record<string, unknown>[] {
+  const results: Record<string, unknown>[] = []
+  for (const item of items) {
+    if (Array.isArray(item)) {
+      results.push(...item)
+    } else if (item && typeof item === 'object') {
+      results.push(item)
+    }
+  }
+  return results
+}
+
 export function createParariusAdapter(apiToken: string): ScraperAdapter {
+  const getActorInput = () => {
+    const startUrls = scrapeFilters.cities.map(city => ({
+      url: `https://www.pararius.nl/koopwoningen/${city}/${scrapeFilters.minPrice}-${scrapeFilters.maxPrice}`,
+    }))
+    return {
+      startUrls,
+      pageFunction: PAGE_FUNCTION,
+      proxyConfiguration: { useApifyProxy: true },
+      maxPagesPerCrawl: startUrls.length,
+    }
+  }
+
   return {
     getSourceId() {
       return 'pararius'
     },
 
+    getActorInput,
+
     async healthCheck(): Promise<boolean> {
       return !!apiToken
     },
 
-    async fetchListings(): Promise<RawListing[]> {
-      const startUrls = scrapeFilters.cities.map(city => ({
-        url: `https://www.pararius.nl/huurwoningen/${city}/0-${scrapeFilters.maxPrice}`,
-      }))
+    async startAsync(webhookUrl: string) {
+      console.log(`[pararius] Starting async run...`)
+      return startApifyActor(ACTOR_ID, getActorInput(), apiToken, webhookUrl)
+    },
 
-      console.log(`[pararius] Scraping ${startUrls.length} cities via Web Scraper...`)
-
-      let allResults: Record<string, unknown>[] = []
-
-      try {
-        const items = await runApifyActor(ACTOR_ID, {
-          startUrls,
-          pageFunction: PAGE_FUNCTION,
-          proxyConfiguration: { useApifyProxy: true },
-          maxPagesPerCrawl: startUrls.length,
-        }, apiToken)
-
-        // Web Scraper wraps pageFunction results — each item contains the returned array
-        for (const item of items) {
-          if (Array.isArray(item)) {
-            allResults.push(...item)
-          } else if (item && typeof item === 'object') {
-            allResults.push(item)
-          }
-        }
-      } catch (error) {
-        console.error('[pararius] Web Scraper failed:', error)
-      }
-
-      console.log(`[pararius] Web Scraper returned ${allResults.length} total items`)
-
+    normalizeResults(items: Record<string, unknown>[]): RawListing[] {
+      const allResults = unwrapApifyItems(items)
+      console.log(`[pararius] Unwrapped ${allResults.length} items from ${items.length} raw`)
       const listings: RawListing[] = []
       for (const item of allResults) {
         const normalized = normalizeResult(item)
         if (normalized) listings.push(normalized)
       }
-
       console.log(`[pararius] Normalized ${listings.length} listings`)
       return listings
+    },
+
+    async fetchListings(): Promise<RawListing[]> {
+      console.log(`[pararius] Scraping ${scrapeFilters.cities.length} cities via Web Scraper...`)
+      try {
+        const items = await runApifyActor(ACTOR_ID, getActorInput(), apiToken)
+        console.log(`[pararius] Web Scraper returned ${items.length} raw items`)
+        return this.normalizeResults(items)
+      } catch (error) {
+        console.error('[pararius] Web Scraper failed:', error)
+        return []
+      }
     },
   }
 }

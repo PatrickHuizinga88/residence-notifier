@@ -1,7 +1,6 @@
 import type { RawListing, ScraperAdapter } from "~~/types/listing";
 import { createParariusAdapter } from "./adapters/pararius";
 import { createFundaAdapter } from "./adapters/funda";
-import { createHuurwoningenAdapter } from "./adapters/huurwoningen";
 import { scrapeFilters } from "./config";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -14,9 +13,8 @@ interface ScrapeResult {
 
 function createAdapters(apifyToken: string): ScraperAdapter[] {
   return [
-    // createParariusAdapter(apifyToken),
     createFundaAdapter(apifyToken),
-    createHuurwoningenAdapter(apifyToken),
+    createParariusAdapter(apifyToken),
   ];
 }
 
@@ -42,7 +40,7 @@ async function upsertListings(
         .update({
           title: listing.title,
           description: listing.description,
-          price_monthly: listing.price_monthly,
+          price: listing.price,
           city: listing.city,
           neighborhood: listing.neighborhood,
           postal_code: listing.postal_code,
@@ -51,7 +49,6 @@ async function upsertListings(
           rooms: listing.rooms,
           bedrooms: listing.bedrooms,
           property_type: listing.property_type,
-          furnished: listing.furnished,
           images: listing.images,
           last_seen_at: new Date().toISOString(),
         })
@@ -64,7 +61,7 @@ async function upsertListings(
         source_listing_id: listing.source_listing_id,
         title: listing.title,
         description: listing.description,
-        price_monthly: listing.price_monthly,
+        price: listing.price,
         city: listing.city,
         neighborhood: listing.neighborhood,
         postal_code: listing.postal_code,
@@ -75,13 +72,8 @@ async function upsertListings(
         rooms: listing.rooms,
         bedrooms: listing.bedrooms,
         property_type: listing.property_type,
-        furnished: listing.furnished || null,
-        available_from: listing.available_from,
         energy_label: listing.energy_label,
         images: listing.images,
-        landlord_type: listing.landlord_type || null,
-        pets_allowed: listing.pets_allowed,
-        income_requirement: listing.income_requirement,
         status: "active",
         first_seen_at: new Date().toISOString(),
         last_seen_at: new Date().toISOString(),
