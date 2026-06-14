@@ -19,7 +19,8 @@ export default defineEventHandler(async (event) => {
 
   const adapters = [
     createFundaAdapter(apifyToken),
-    createParariusAdapter(apifyToken),
+    // Pararius tijdelijk uit: de simpele apify~web-scraper wordt geblokkeerd
+    // createParariusAdapter(apifyToken),
   ];
 
   const runs: { source: string; runId: string; datasetId: string }[] = [];
