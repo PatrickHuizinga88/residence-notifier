@@ -14,7 +14,8 @@ interface ScrapeResult {
 function createAdapters(apifyToken: string): ScraperAdapter[] {
   return [
     createFundaAdapter(apifyToken),
-    createParariusAdapter(apifyToken),
+    // Pararius tijdelijk uit: de simpele apify~web-scraper wordt geblokkeerd
+    // createParariusAdapter(apifyToken),
   ];
 }
 

@@ -107,7 +107,8 @@ export default defineEventHandler(async (event) => {
   // Determine which adapter based on actId
   const adapters: Record<string, ScraperAdapter> = {
     "easyapi~funda-nl-scraper": createFundaAdapter(apifyToken),
-    "apify~web-scraper": createParariusAdapter(apifyToken),
+    // Pararius tijdelijk uit: de simpele apify~web-scraper wordt geblokkeerd
+    // "apify~web-scraper": createParariusAdapter(apifyToken),
   };
 
   // actId from Apify is in format "username/actor-name" or the full ID
@@ -132,9 +133,11 @@ export default defineEventHandler(async (event) => {
 
     if (logEntry?.source === "funda") {
       adapter = adapters["easyapi~funda-nl-scraper"];
-    } else if (logEntry?.source === "pararius") {
-      adapter = adapters["apify~web-scraper"];
     }
+    // Pararius tijdelijk uit
+    // else if (logEntry?.source === "pararius") {
+    //   adapter = adapters["apify~web-scraper"];
+    // }
   }
 
   if (!adapter) {
