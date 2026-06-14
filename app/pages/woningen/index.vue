@@ -89,7 +89,7 @@ function formatPrice(cents: number): string {
     <h1 class="text-2xl font-bold mb-2">Koopwoningen</h1>
 
     <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-      Standaard gefilterd op €200.000–€500.000, min. 50 m² in Eindhoven, Boxtel en Veghel.
+      Standaard gefilterd op €200.000–€270.000 en min. 50 m² in de regio Eindhoven–Meierij.
     </p>
 
     <!-- Filters -->
